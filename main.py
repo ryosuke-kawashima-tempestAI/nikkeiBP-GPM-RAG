@@ -21,7 +21,7 @@ from src.langchain import build_rag_chain
 # -----------------------------
 # Configuration
 # -----------------------------
-APIKEY = "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"
+APIKEY = "your_openai_api_key_here!!!"
 os.environ["OPENAI_API_KEY"] = APIKEY
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
