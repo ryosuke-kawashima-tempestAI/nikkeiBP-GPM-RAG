@@ -15,17 +15,18 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
     # SystemMessage, # Removed incorrect import
 )
-from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
+from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt, _read_mermaid_file
 from src.langchain import build_rag_chain
 
 # -----------------------------
 # Configuration
 # -----------------------------
-APIKEY = "your_openai_api_key_here!!!"
+APIKEY = input("Enter your OpenAI API Key: ")
 os.environ["OPENAI_API_KEY"] = APIKEY
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
-PROMPT_PATH = "./prompts/nikkeiBP_WordNet.md"
+PROMPT_PATH = "./prompts/nikkeiBP_mermaid.md"
+GRAPH_PATH = "./knowledge_graphs/NikkeiBP_meronymy_hyponymy.mmd"
 
 # Persist vector DB to avoid recomputation across runs
 PERSIST_DIR = "chroma_db"
@@ -59,8 +60,10 @@ def main() -> None:
     # Example usage
     history: List[Tuple[str, str]] = []  # placeholder for chat history if you have it
     question = _read_queryprompt(PROMPT_PATH)
+    graph = _read_mermaid_file(GRAPH_PATH)
+    question_and_graph = f"{question}\n\nKnowledge Graph:\n{graph}"
 
-    result = rag_chain.invoke({"question": question, "chat_history": history})
+    result = rag_chain.invoke({"question": question_and_graph, "chat_history": history})
 
     # Pretty print
     print("\n=== Answer ===")

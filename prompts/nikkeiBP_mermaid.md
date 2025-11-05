@@ -16,6 +16,8 @@ Analyze and categorize actions from improvement process logs of the sandwich fac
 - [ ] Then categorize them based on the following two relations based on WordNet.
     1. **hyponymy**: the super-subordinate relation (Is-A relation)
     2. **meronymy**: the part-whole relation (PartOf relation)
+- [ ] Finally, express the relationships of hyponymy and meronymy in the format of **Mermaid** Graph.
+    -[Mermaid Syntax](https://mermaid.js.org/intro/syntax-reference.html)
 
 ## 🛠️ Work Process
 
@@ -35,6 +37,12 @@ Analyze and categorize actions from improvement process logs of the sandwich fac
 - An action can be categorized in several groups
 - A group can be included in another one.
 
+### Step 4: Create a mermaid file for the relationships of log actions and groups
+
+- [ ] Make the nodes of the log actions and groups gained in the previous steps.
+- [ ] Make edges of the nodes based on the information of the relations of **hyponymy** and **meronymy**.
+- [ ] Make sure that all the information in the previous step is included in the graph.
+
 ## 📂 Required Output Files
 
 ### `groups.xlsx`
@@ -49,6 +57,15 @@ Analyze and categorize actions from improvement process logs of the sandwich fac
     - [ ] You should mention whether the category is **hyponymy** or **meronymy**.
   - [ ] `WordNet Reference`
     - [ ] You should mention which word on WordNet you referred to.
+
+### `knowledge_graph.mmd`
+
+- [ ] Nodes
+    -Log Actions
+    -Groups
+- [ ] Edges
+  -[ ] Hyponymy
+  -[ ] Meronymy
 
 ## 🧷 Technical Constraints
 

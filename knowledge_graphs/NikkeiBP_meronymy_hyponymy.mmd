@@ -1,0 +1,85 @@
+---
+config:
+  layout: elk
+---
+flowchart TD
+    A01["A01 Create stations"] -- IsA --> GH1["GH1 Project setup actions"]
+    A02["A02 Associate process↔station"] -- IsA --> GH1
+    A03["A03 Execute simulation"] -- IsA --> GH2["GH2 Simulation & verification actions"]
+    A04["A04 Save project"] -- IsA --> GH1
+    A05["A05 Capture operational data"] -- IsA --> GH8["GH8 Knowledge navigation & guidance"]
+    A06["A06 Analyze performance"] -- IsA --> GH3["GH3 Evaluation & analysis actions"]
+    A07["A07 Formulate hypotheses"] -- IsA --> GH3
+    A08["A08 Verify hypotheses"] -- IsA --> GH2
+    A09["A09 Decide improvement actions"] -- IsA --> GH5["GH5 Decision-making actions"]
+    A10["A10 Navigate/guide operations"] -- IsA --> GH8
+    A11["A11 List & clarify problems"] -- IsA --> GH3
+    A12["A12 Identify bottleneck"] -- IsA --> GH3
+    A13["A13 Mark problem areas"] -- IsA --> GH6["GH6 Communication & social actions"]
+    A14["A14 Plan improvement policy"] -- IsA --> GH4["GH4 Planning & configuration actions"]
+    A15["A15 Adjust cycle time"] -- IsA --> GH4
+    A16["A16 Change transport capacity"] -- IsA --> GH4
+    A17["A17 Adjust buffer sizes"] -- IsA --> GH4
+    A18["A18 Set initial inventory"] -- IsA --> GH4
+    A19["A19 Compute investment points"] -- IsA --> GH4
+    A20["A20 Evaluate investment vs output"] -- IsA --> GH3
+    A21["A21 Iterate improvement cycle"] -- IsA --> GH9["GH9 Iterative/control actions"]
+    A22["A22 Present results"] -- IsA --> GH6
+    A23["A23 Group discussion"] -- IsA --> GH6
+    A24["A24 Configure evaluation metrics"] -- IsA --> GH4
+    A25["A25 Monitor utilization & inventory"] -- IsA --> GH3
+    A26["A26 Transport to packaging"] -- IsA --> GH7["GH7 Manufacturing & logistics actions"]
+    A27["A27 Process ham ingredients"] -- IsA --> GH7
+    A28["A28 Process egg ingredients"] -- IsA --> GH7
+    A29["A29 Cut operation"] -- IsA --> GH7
+    A30["A30 Packaging operation"] -- IsA --> GH7
+    A31["A31 Packing for shipment"] -- IsA --> GH7
+    A32["A32 Input bread"] -- IsA --> GH7
+    A33["A33 Ship products"] -- IsA --> GH7
+    A35["A35 System change/Kaizen"] -- IsA --> GH8
+    A36["A36 Human-in-the-loop assistance"] -- IsA --> GH8
+    A37["A37 Drag-and-drop linking"] -- IsA --> GH1
+    A38["A38 Press A while dragging"] -- IsA --> GH1
+    A39["A39 Click menu to save"] -- IsA --> GH1
+    A01 -- PartOf --> GM3["GM3 Project setup workflow"]
+    A02 -- PartOf --> GM3
+    A03 -- PartOf --> GM2["GM2 Improvement experiment cycle"]
+    A04 -- PartOf --> GM3
+    A05 -- PartOf --> GM1["GM1 PD3 knowledge loop"]
+    A06 -- PartOf --> GM1
+    A07 -- PartOf --> GM1
+    A08 -- PartOf --> GM1
+    A09 -- PartOf --> GM1
+    A10 -- PartOf --> GM1
+    A11 -- PartOf --> GM4["GM4 Group presentation package"]
+    A12 -- PartOf --> GM4
+    A13 -- PartOf --> GM4
+    A14 -- PartOf --> GM4
+    A15 -- PartOf --> GM2
+    A16 -- PartOf --> GM7["GM7 Material handling & WIP control"]
+    A17 -- PartOf --> GM7
+    A18 -- PartOf --> GM7
+    A19 -- PartOf --> GM2
+    A20 -- PartOf --> GM2
+    A21 -- PartOf --> GM2
+    A22 -- PartOf --> GM4
+    A23 -- PartOf --> GM4
+    A24 -- PartOf --> GM6["GM6 Evaluation metrics handling"]
+    A25 -- PartOf --> GM6
+    A26 -- PartOf --> GM7
+    A27 -- PartOf --> GM5["GM5 Production process flow"]
+    A28 -- PartOf --> GM5
+    A29 -- PartOf --> GM5
+    A30 -- PartOf --> GM5
+    A31 -- PartOf --> GM5
+    A32 -- PartOf --> GM5
+    A33 -- PartOf --> GM5
+    A35 -- PartOf --> GM2
+    A36 -- PartOf --> GM1
+    A37 -- PartOf --> GM3
+    A38 -- PartOf --> GM3
+    A39 -- PartOf --> GM3
+    GM3 -- PartOf --> GM2
+    GM6 -- PartOf --> GM2
+    GM7 -- PartOf --> GM5
+    GM2 -- PartOf --> GM1

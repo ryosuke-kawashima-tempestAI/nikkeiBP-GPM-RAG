@@ -17,6 +17,7 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
+from pathlib import Path
 
 def _download_pdf(url: str, dst_path: str) -> None:
     """Download a PDF if it does not exist.
@@ -163,3 +164,32 @@ def _read_queryprompt(path="./*.md") -> str:
     print("Combined markdown length:", len(question))
     print(question[:len(question)//5])
     return question
+
+def _read_mermaid_file(file_path: str) -> str:
+    """Read a Mermaid (.mmd) file and return its contents as a string.
+
+    This function safely reads the content of a Mermaid file, automatically
+    handling common encodings and trimming extra whitespace.
+
+    Args:
+        file_path: Path to the Mermaid (.mmd) file to read.
+
+    Returns:
+        A string containing the full Mermaid graph definition.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        UnicodeDecodeError: If the file encoding cannot be decoded.
+        ValueError: If the file is empty.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+    if path.suffix.lower() != ".mmd":
+        print(f"⚠️ Warning: '{file_path}' does not have a .mmd extension.")
+
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        raise ValueError(f"The file '{file_path}' is empty.")
+
+    return text
