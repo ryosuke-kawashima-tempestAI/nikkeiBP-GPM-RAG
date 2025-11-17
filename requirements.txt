@@ -4,3 +4,12 @@ langchain-openai
 langchain-chroma
 langgraph
 langchain-google-genai
+pandas
+langchain
+unstructured>=0.7.0
+openpyxl>=3.0.10
+# platform-specific dependency for file type detection:
+python-magic-bin==0.4.14; sys_platform == "win32"
+python-magic>=0.4.24; sys_platform != "win32"
+networkx
+msoffcrypto-tool>=0.74.0

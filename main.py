@@ -15,17 +15,19 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
     # SystemMessage, # Removed incorrect import
 )
-from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt, _read_mermaid_file
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file
 from src.langchain import build_rag_chain
 
 # -----------------------------
 # Configuration
 # -----------------------------
-APIKEY = input("Enter your OpenAI API Key: ")
+APIKEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = APIKEY
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
+EXCEL_PATH = "./documents/gpm_tips.xlsx"
 PROMPT_PATH = "./prompts/nikkeiBP_mermaid.md"
+TARGET_PATH = "./target/nikkeiBP_LLDs.xlsx"
 GRAPH_PATH = "./knowledge_graphs/NikkeiBP_meronymy_hyponymy.mmd"
 
 # Persist vector DB to avoid recomputation across runs
@@ -52,18 +54,17 @@ def main() -> None:
 
     # Prepare data + vector store
     # _download_pdf(PDF_URL, PDF_PATH)
-    vectordb, _ = _build_or_load_vector_store(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_excel(EXCEL_PATH, PERSIST_DIR, update=True)
 
-    # Build chain
+    # Build chain from vector store
     rag_chain = build_rag_chain(vectordb)
 
     # Example usage
     history: List[Tuple[str, str]] = []  # placeholder for chat history if you have it
-    question = _read_queryprompt(PROMPT_PATH)
-    graph = _read_mermaid_file(GRAPH_PATH)
-    question_and_graph = f"{question}\n\nKnowledge Graph:\n{graph}"
+    target = _read_excel_file(TARGET_PATH)
 
-    result = rag_chain.invoke({"question": question_and_graph, "chat_history": history})
+    result = rag_chain.invoke({"question": target, "chat_history": history})
 
     # Pretty print
     print("\n=== Answer ===")

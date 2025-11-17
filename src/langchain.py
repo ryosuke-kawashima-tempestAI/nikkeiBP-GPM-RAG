@@ -17,7 +17,29 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
-from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _unique_sources
+# -----------------------------
+# SYSTEM SETUP
+# -----------------------------
+
+SYSTEM_PROMPT = """
+# Engineering Process Actions Categorization and Grouping
+
+## Role
+
+You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a sandwitch factory, making it both understandable and reusable.
+
+## Objective
+
+Summarize the problem-solving processes to create a representative, generic model of the improvement process of the sandwich factory.
+
+## Task
+
+Based on the provided information and knowledge, analyze and categorize actions from improvement process logs of the sandwich factory.
+- [ ] First, extract all actions from the logs.
+- [ ] Then categorize them based on their similarities.
+- [ ] Finally, group similar actions together to form a structured representation of the improvement process with the **source** you referred to.
+"""
 
 # -----------------------------
 # RAG Chain (LangChain)
@@ -48,11 +70,12 @@ def build_rag_chain(vectordb: Chroma):
         [
             (
                 "system",
-                "You are a Knowledge Engineer, responsible for designing models that capture and structure process knowledge, making it both understandable and reusable."
+                SYSTEM_PROMPT,
             ),
             MessagesPlaceholder(variable_name="chat_history"),
-            HumanMessagePromptTemplate.from_template(
-                "Context:\n{context}\n\nQuestion: {question}\n\nAnswer:"
+            (
+                "human",
+                "Context:\n{chat_history}\n\nLLD Actions: {question}\n\nAnswer:"
             ),
         ]
     )
@@ -69,13 +92,11 @@ def build_rag_chain(vectordb: Chroma):
         question = input_dict["question"]
         chat_history = input_dict.get("chat_history", [])
         docs = _retrieve_with_threshold(vectordb, question, top_k, relevance_threshold)
-        context = _format_context_for_prompt(docs)
         sources = _unique_sources(docs)
         return {
             "question": question,
             "chat_history": chat_history,
             "docs": docs,
-            "context": context,
             "sources": sources,
         }
 
@@ -83,7 +104,7 @@ def build_rag_chain(vectordb: Chroma):
 
     # Branch that generates the model answer (keeps only what the prompt expects)
     answer_branch = (
-        RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"], "context": x["context"]})
+        RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"]})
         | prompt
         | llm
         | StrOutputParser()

@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader
 import requests
 import os
 import glob
+import pandas as pd
 from operator import itemgetter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -18,6 +19,16 @@ from langchain_core.prompts import (
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
 from pathlib import Path
+# -----------------------------
+# Configuration
+# -----------------------------
+
+APIKEY = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_API_KEY"] = APIKEY
+
+# -----------------------------
+# Utilities Functions
+# -----------------------------
 
 def _download_pdf(url: str, dst_path: str) -> None:
     """Download a PDF if it does not exist.
@@ -34,7 +45,7 @@ def _download_pdf(url: str, dst_path: str) -> None:
     with open(dst_path, "wb") as f:
         f.write(resp.content)
 
-def _build_or_load_vector_store(pdf_path: str, persist_dir: str) -> Tuple[Chroma, List[Document]]:
+def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
     """Load pages, chunk them, and build/persist a Chroma vector store.
 
     This function is idempotent—if a persisted DB exists, it will be reused.
@@ -84,25 +95,58 @@ def _build_or_load_vector_store(pdf_path: str, persist_dir: str) -> Tuple[Chroma
 
     return vectordb, chunks
 
-def _format_context_for_prompt(docs: List[Document]) -> str:
-    """Create a compact, source-aware context string.
+def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
+    """Load Excel file, chunk its content, and build/persist a Chroma vector store.
 
-    Each chunk is annotated with its source and page to aid the model and humans.
+    This function is idempotent—if a persisted DB exists, it will be reused.
 
     Args:
-        docs: Retrieved document chunks.
-
+        excel_path: Path to the source Excel (.xlsx) file.
+        persist_dir: Chroma persistence directory.
     Returns:
-        A single string containing concatenated chunks with source/page headers.
+        A tuple of (vector_store, all_chunks).
     """
-    formatted = []
-    for i, d in enumerate(docs, start=1):
-        src = d.metadata.get("source", "unknown_source")
-        page = d.metadata.get("page", "unknown_page")
-        formatted.append(
-            f"[Chunk {i} | Source: {os.path.basename(src)} | p.{page}]\n{d.page_content.strip()}"
+    loader = UnstructuredExcelLoader(excel_path)
+    docs = loader.load()
+    print(f"Document's Pages: {len(docs)}")
+    page_median = len(docs) // 2
+    print(f"{page_median}th page: {docs[page_median].page_content[:100]}")
+    
+    # Chunk by row to preserve data integrity
+    chunks = []
+    for doc in docs:
+        # Each row becomes a separate chunk
+        # metadata can record the sheet name and row number if needed
+        chunks.append(Document(
+            page_content=doc.page_content,
+            metadata=doc.metadata
+        ))
+
+    # Embeddings (OpenAI)
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        api_key=os.environ.get("OPENAI_API_KEY")
+    )
+
+    # If DB already exists, open it; otherwise create and persist
+    if os.path.isdir(persist_dir) and len(os.listdir(persist_dir)) > 0:
+        print(f"Loading persisted Chroma DB from {persist_dir}")
+        vectordb = Chroma(
+            embedding_function=embeddings,
+            persist_directory=persist_dir,
         )
-    return "\n\n".join(formatted)
+        if update:
+            print("Updating existing Chroma DB with new chunks.")
+            vectordb.add_documents(chunks)
+    else:
+        print(f"Creating new Chroma DB in {persist_dir}")
+        vectordb = Chroma.from_documents(
+            documents=chunks,
+            embedding=embeddings,
+            persist_directory=persist_dir,
+        )
+
+    return vectordb, chunks
 
 def _unique_sources(docs: List[Document]) -> List[Tuple[str, int]]:
     """Extract unique (source, page) pairs preserving order.
@@ -193,3 +237,32 @@ def _read_mermaid_file(file_path: str) -> str:
         raise ValueError(f"The file '{file_path}' is empty.")
 
     return text
+
+def _read_excel_file(file_path: str) -> str:
+    """Read an Excel (.xlsx) file and return its contents as a pandas DataFrame.
+
+    This function safely reads the content of an Excel file, handling common
+    issues such as file not found or read errors.
+
+    Args:
+        file_path: Path to the Excel (.xlsx) file to read.
+    Returns:
+        A pandas DataFrame containing the Excel data.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+    if path.suffix.lower() != ".xlsx":
+        print(f"⚠️ Warning: '{file_path}' does not have a .xlsx extension.")
+    df = pd.read_excel(file_path)
+    docs = []
+    for i, row in df.iterrows():
+        text = "\n".join(f"{k}: {v}" for k, v in row.to_dict().items())
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={"row_index": int(i), "source": os.path.basename(file_path)},
+            )
+        )
+    combined_text = "\n\n".join(doc.page_content for doc in docs)
+    return combined_text
