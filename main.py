@@ -55,7 +55,7 @@ def main() -> None:
     # Prepare data + vector store
     # _download_pdf(PDF_URL, PDF_PATH)
     vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
-    vectordb, _ = _build_or_load_vector_store_from_excel(EXCEL_PATH, PERSIST_DIR, update=True)
+    vectordb, _ = _build_or_load_vector_store_from_excel(EXCEL_PATH, PERSIST_DIR)
 
     # Build chain from vector store
     rag_chain = build_rag_chain(vectordb)

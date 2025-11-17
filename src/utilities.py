@@ -106,8 +106,19 @@ def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, up
     Returns:
         A tuple of (vector_store, all_chunks).
     """
-    loader = UnstructuredExcelLoader(excel_path)
-    docs = loader.load()
+    df = pd.read_excel(excel_path)
+    docs = []
+    for i, row in df.iterrows():
+        # Convert each row into readable text
+        text = "\n".join(f"{col}: {row[col]}" for col in df.columns)
+
+        # Create a Document per row
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={"row": i, "source": excel_path}
+            )
+        )
     print(f"Document's Pages: {len(docs)}")
     page_median = len(docs) // 2
     print(f"{page_median}th page: {docs[page_median].page_content[:100]}")
