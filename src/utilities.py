@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 from langchain_community.document_loaders import PyPDFLoader
 import requests
 import os
+import pandas as pd
 import glob
 from operator import itemgetter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -17,8 +18,6 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
-<<<<<<< Updated upstream
-=======
 from pathlib import Path
 from pydantic import BaseModel
 # -----------------------------
@@ -57,7 +56,6 @@ class GpmClasses(BaseModel):
 # -----------------------------
 # Utilities Functions
 # -----------------------------
->>>>>>> Stashed changes
 
 def _download_pdf(url: str, dst_path: str) -> None:
     """Download a PDF if it does not exist.
@@ -74,7 +72,7 @@ def _download_pdf(url: str, dst_path: str) -> None:
     with open(dst_path, "wb") as f:
         f.write(resp.content)
 
-def _build_or_load_vector_store(pdf_path: str, persist_dir: str) -> Tuple[Chroma, List[Document]]:
+def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
     """Load pages, chunk them, and build/persist a Chroma vector store.
 
     This function is idempotent—if a persisted DB exists, it will be reused.
@@ -114,6 +112,70 @@ def _build_or_load_vector_store(pdf_path: str, persist_dir: str) -> Tuple[Chroma
             embedding_function=embeddings,
             persist_directory=persist_dir,
         )
+    else:
+        print(f"Creating new Chroma DB in {persist_dir}")
+        vectordb = Chroma.from_documents(
+            documents=chunks,
+            embedding=embeddings,
+            persist_directory=persist_dir,
+        )
+
+    return vectordb, chunks
+
+def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
+    """Load Excel file, chunk its content, and build/persist a Chroma vector store.
+
+    This function is idempotent—if a persisted DB exists, it will be reused.
+
+    Args:
+        excel_path: Path to the source Excel (.xlsx) file.
+        persist_dir: Chroma persistence directory.
+    Returns:
+        A tuple of (vector_store, all_chunks).
+    """
+    df = pd.read_excel(excel_path)
+    docs = []
+    for i, row in df.iterrows():
+        # Convert each row into readable text
+        text = "\n".join(f"{col}: {row[col]}" for col in df.columns)
+
+        # Create a Document per row
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={"row": i, "source": excel_path}
+            )
+        )
+    print(f"Document's Pages: {len(docs)}")
+    page_median = len(docs) // 2
+    print(f"{page_median}th page: {docs[page_median].page_content[:100]}")
+    
+    # Chunk by row to preserve data integrity
+    chunks = []
+    for doc in docs:
+        # Each row becomes a separate chunk
+        # metadata can record the sheet name and row number if needed
+        chunks.append(Document(
+            page_content=doc.page_content,
+            metadata=doc.metadata
+        ))
+
+    # Embeddings (OpenAI)
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        api_key=os.environ.get("OPENAI_API_KEY")
+    )
+
+    # If DB already exists, open it; otherwise create and persist
+    if os.path.isdir(persist_dir) and len(os.listdir(persist_dir)) > 0:
+        print(f"Loading persisted Chroma DB from {persist_dir}")
+        vectordb = Chroma(
+            embedding_function=embeddings,
+            persist_directory=persist_dir,
+        )
+        if update:
+            print("Updating existing Chroma DB with new chunks.")
+            vectordb.add_documents(chunks)
     else:
         print(f"Creating new Chroma DB in {persist_dir}")
         vectordb = Chroma.from_documents(
@@ -204,3 +266,61 @@ def _read_queryprompt(path="./*.md") -> str:
     print("Combined markdown length:", len(question))
     print(question[:len(question)//5])
     return question
+
+def _read_mermaid_file(file_path: str) -> str:
+    """Read a Mermaid (.mmd) file and return its contents as a string.
+
+    This function safely reads the content of a Mermaid file, automatically
+    handling common encodings and trimming extra whitespace.
+
+    Args:
+        file_path: Path to the Mermaid (.mmd) file to read.
+
+    Returns:
+        A string containing the full Mermaid graph definition.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        UnicodeDecodeError: If the file encoding cannot be decoded.
+        ValueError: If the file is empty.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+    if path.suffix.lower() != ".mmd":
+        print(f"⚠️ Warning: '{file_path}' does not have a .mmd extension.")
+
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        raise ValueError(f"The file '{file_path}' is empty.")
+
+    return text
+
+def _read_excel_file(file_path: str) -> str:
+    """Read an Excel (.xlsx) file and return its contents as a pandas DataFrame.
+
+    This function safely reads the content of an Excel file, handling common
+    issues such as file not found or read errors.
+
+    Args:
+        file_path: Path to the Excel (.xlsx) file to read.
+    Returns:
+        A pandas DataFrame containing the Excel data.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+    if path.suffix.lower() != ".xlsx":
+        print(f"⚠️ Warning: '{file_path}' does not have a .xlsx extension.")
+    df = pd.read_excel(file_path)
+    docs = []
+    for i, row in df.iterrows():
+        text = "\n".join(f"{k}: {v}" for k, v in row.to_dict().items())
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={"row_index": int(i), "source": os.path.basename(file_path)},
+            )
+        )
+    combined_text = "\n\n".join(doc.page_content for doc in docs)
+    return combined_text

@@ -16,25 +16,21 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
     # SystemMessage, # Removed incorrect import
 )
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
-=======
+
 from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
->>>>>>> Stashed changes
-=======
-from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
->>>>>>> Stashed changes
 from src.langchain import build_rag_chain
 
 # -----------------------------
 # Configuration
 # -----------------------------
-APIKEY = "your_openai_api_key_here!!!"
+APIKEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = APIKEY
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
-PROMPT_PATH = "./prompts/nikkeiBP_WordNet.md"
+EXCEL_PATH = "./documents/gpm_tips.xlsx"
+PROMPT_PATH = "./prompts/nikkeiBP_mermaid.md"
+TARGET_PATH = "./target/nikkeiBP_LLDs.xlsx"
+GRAPH_PATH = "./knowledge_graphs/NikkeiBP_meronymy_hyponymy.mmd"
 
 # Persist vector DB to avoid recomputation across runs
 PERSIST_DIR = "chroma_db"
@@ -60,16 +56,17 @@ def main() -> None:
 
     # Prepare data + vector store
     # _download_pdf(PDF_URL, PDF_PATH)
-    vectordb, _ = _build_or_load_vector_store(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
 
     # Build chain
     rag_chain = build_rag_chain(vectordb)
 
     # Example usage
     history: List[Tuple[str, str]] = []  # placeholder for chat history if you have it
-    question = _read_queryprompt(PROMPT_PATH)
+    target = _read_excel_file(TARGET_PATH)
 
-    result = rag_chain.invoke({"question": question, "chat_history": history})
+    result = rag_chain.invoke({"question": target, "chat_history": history})
 
     # Pretty print
     print("=== Answer of LLD ===")

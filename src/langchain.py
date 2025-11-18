@@ -17,13 +17,7 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
-=======
-=======
->>>>>>> Stashed changes
-from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _unique_sources, LldGpmIDs, GpmClasses
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _format_context_for_prompt, _retrieve_with_threshold, _unique_sources, LldGpmIDs, GpmClasses
 # -----------------------------
 # SYSTEM SETUP
 # -----------------------------
@@ -88,10 +82,6 @@ Based on the categorization of LLD actions and gained GPM classes, analyze the P
         ),
     ]
 )
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 # -----------------------------
 # RAG Chain (LangChain)
@@ -118,28 +108,8 @@ def build_rag_chain(vectordb: Chroma):
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a Knowledge Engineer, responsible for designing models that capture and structure process knowledge, making it both understandable and reusable."
-            ),
-            MessagesPlaceholder(variable_name="chat_history"),
-            HumanMessagePromptTemplate.from_template(
-                "Context:\n{context}\n\nQuestion: {question}\n\nAnswer:"
-            ),
-        ]
-    )
-=======
     lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
     gpm_classes_llm = llm.with_structured_output(GpmClasses)
->>>>>>> Stashed changes
-=======
-    lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
-    gpm_classes_llm = llm.with_structured_output(GpmClasses)
->>>>>>> Stashed changes
 
     # Make the dictionary to store the output and resources!!!
     def _prepare(input_dict: Dict, top_k = 10, relevance_threshold=0.01) -> Dict:
@@ -173,25 +143,11 @@ def build_rag_chain(vectordb: Chroma):
     prepare_node = RunnableLambda(_prepare)
 
     # Branch that generates the model answer (keeps only what the prompt expects)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    answer_branch = (
-        RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"], "context": x["context"]})
-        | prompt
-        | llm
-        | StrOutputParser()
-=======
-=======
->>>>>>> Stashed changes
     lld_file_branch = (
         RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"]})
         | prompt_lld_file
         | lld_gmp_llm
         | RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x["lld_gpm_ids_knowledge"].to_string()})
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     )
 
     gpm_file_branch = (
