@@ -17,6 +17,47 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
+<<<<<<< Updated upstream
+=======
+from pathlib import Path
+from pydantic import BaseModel
+# -----------------------------
+# Configuration
+# -----------------------------
+
+APIKEY = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_API_KEY"] = APIKEY
+
+# -----------------------------
+# Data Types
+# -----------------------------
+
+class LldGpmIDs(BaseModel):
+    """GPM IDs assigned to each LLD action"""
+    IDs: List[int]
+    ClassNames: List[str]
+    knowledge: List[str]
+    def to_string(self) -> str:
+        return "\n".join(
+            f"LLD Action {i+1}: Class ID {cid}, Class Name: {cname}, Knowledge: {knowl}"
+            for i, (cid, cname, knowl) in enumerate(zip(self.IDs, self.ClassNames, self.knowledge))
+        )
+
+class GpmClasses(BaseModel):
+    """GPM Class assigned to each LLD action"""
+    IDs: List[int]
+    ClassNames: List[str]
+    PartOfs: List[int]  # ID of the parent class
+    def to_string(self) -> str:
+        return "\n".join(
+            f"GPM Class ID {cid}: Class Name: {cname}, Part Of: {partof}"
+            for cid, cname, partof in zip(self.IDs, self.ClassNames, self.PartOfs)
+        )
+
+# -----------------------------
+# Utilities Functions
+# -----------------------------
+>>>>>>> Stashed changes
 
 def _download_pdf(url: str, dst_path: str) -> None:
     """Download a PDF if it does not exist.

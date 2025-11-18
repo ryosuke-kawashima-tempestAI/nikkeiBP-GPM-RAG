@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 from langchain_community.document_loaders import PyPDFLoader
 import requests
 import os
+import pandas as pd
 import glob
 from operator import itemgetter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -15,7 +16,11 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
     # SystemMessage, # Removed incorrect import
 )
+<<<<<<< Updated upstream
 from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
+=======
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
+>>>>>>> Stashed changes
 from src.langchain import build_rag_chain
 
 # -----------------------------
@@ -63,8 +68,20 @@ def main() -> None:
     result = rag_chain.invoke({"question": question, "chat_history": history})
 
     # Pretty print
-    print("\n=== Answer ===")
-    print(result["answer"].strip())
+    print("=== Answer of LLD ===")
+    lld_gpm_ids: LldGpmIDs = result["lld_gpm_ids_knowledge"]
+    gpm_classes: GpmClasses = result["gpm_classes"]
+    target_with_gpm = target.copy()
+    target_with_gpm["ClassID"] = pd.Series(lld_gpm_ids.IDs)
+    target_with_gpm["ClassName"] = pd.Series(gpm_classes.ClassNames)
+    target_with_gpm["Knowledge"] = pd.Series(lld_gpm_ids.knowledge)
+    target_with_gpm.to_csv("./outputs/nikkeiBP_LLDs_with_GPM.csv", index=False)
+
+    print("=== Answer of GPM ===")
+    gpm_file = pd.DataFrame(gpm_classes.IDs, columns=["ClassID"])
+    gpm_file["ClassName"] = pd.Series(gpm_classes.ClassNames)
+    gpm_file["PartOf"] = pd.Series(gpm_classes.PartOfs)
+    gpm_file.to_csv("./outputs/nikkeiBP_GPM_classes.csv", index=False)
 
     print("\n=== Sources ===")
     if result["sources"]:

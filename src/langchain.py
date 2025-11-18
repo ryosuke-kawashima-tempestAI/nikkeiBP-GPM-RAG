@@ -17,7 +17,75 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
+<<<<<<< Updated upstream
 from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
+=======
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _unique_sources, LldGpmIDs, GpmClasses
+# -----------------------------
+# SYSTEM SETUP
+# -----------------------------
+
+SYSTEM_PROMPT = """
+# Engineering Process Actions Categorization and Grouping
+
+## Role
+
+You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a sandwitch factory, making it both understandable and reusable.
+
+## Objective
+
+Summarize the problem-solving processes to create a representative, generic model of the improvement process of the sandwich factory.
+
+## Guidelines
+
+- LLD is an abbreaviation for Low Level Descriptions, which are detailed logs of actions taken during the process.
+- GPM is an abbreviation for General Process Model, which is a representative, generic model of the process gained from several LLDs.
+
+"""
+
+# -----------------------------
+# PROMPT TEMPLATE
+# -----------------------------
+prompt_lld_file = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            SYSTEM_PROMPT,
+        ),
+        MessagesPlaceholder(variable_name="chat_history"),
+        (
+            "human",
+            """
+## Task
+
+Based on the provided information and knowledge, analyze and categorize actions from improvement process logs of the sandwich factory.
+- [ ] First, extract all actions from the logs.
+- [ ] Then categorize them based on their similarities.
+- [ ] Finally, group similar actions together to form a structured representation of the improvement process with the **source** and **knowledge** you referred to.\n\n"""
+            "Context:\n{chat_history}\n\nLLD Actions: {question}\n\nAnswer:"
+        ),
+    ]
+)
+prompt_gpm_file = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            SYSTEM_PROMPT,
+        ),
+        MessagesPlaceholder(variable_name="chat_history"),
+        (
+            "human",
+            """
+## Task
+
+Based on the categorization of LLD actions and gained GPM classes, analyze the PartOf relationships among the GPM Classes.
+- [ ] First, analyze the correspondence of the LLD actions to the GPM classes based on the IDs.
+- [ ] Then, create a list of GPM classes with their IDs, ClassNames, and parent of the PartOf relations.\n\n"""
+            "Context:\n{lld_gpm_ids_knowledge}\n\nAnswer:"
+        ),
+    ]
+)
+>>>>>>> Stashed changes
 
 # -----------------------------
 # RAG Chain (LangChain)
@@ -44,6 +112,7 @@ def build_rag_chain(vectordb: Chroma):
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
+<<<<<<< Updated upstream
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -56,7 +125,12 @@ def build_rag_chain(vectordb: Chroma):
             ),
         ]
     )
+=======
+    lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
+    gpm_classes_llm = llm.with_structured_output(GpmClasses)
+>>>>>>> Stashed changes
 
+    # Make the dictionary to store the output and resources!!!
     def _prepare(input_dict: Dict, top_k = 10, relevance_threshold=0.01) -> Dict:
         """Prepare retrieval results and derived fields for prompting.
 
@@ -71,23 +145,46 @@ def build_rag_chain(vectordb: Chroma):
         docs = _retrieve_with_threshold(vectordb, question, top_k, relevance_threshold)
         context = _format_context_for_prompt(docs)
         sources = _unique_sources(docs)
+        lld_gpm_ids_knowledge = []
+        gpm_claasses = []
+
+        # Stores the IDs of LLD and GPM
         return {
             "question": question,
             "chat_history": chat_history,
             "docs": docs,
             "context": context,
             "sources": sources,
+            "lld_gpm_ids_knowledge": lld_gpm_ids_knowledge,
+            "gpm_classes": gpm_claasses,
         }
 
     prepare_node = RunnableLambda(_prepare)
 
     # Branch that generates the model answer (keeps only what the prompt expects)
+<<<<<<< Updated upstream
     answer_branch = (
         RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"], "context": x["context"]})
         | prompt
         | llm
         | StrOutputParser()
+=======
+    lld_file_branch = (
+        RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"]})
+        | prompt_lld_file
+        | lld_gmp_llm
+        | RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x["lld_gpm_ids_knowledge"].to_string()})
+>>>>>>> Stashed changes
     )
+
+    gpm_file_branch = (
+        prompt_gpm_file
+        | gpm_classes_llm
+        | RunnableLambda(lambda x: {"gpm_classes": x["gpm_classes"].to_string()})
+    )
+
+    answer_branch = lld_file_branch | gpm_file_branch
+
     # Branch that passes sources through untouched
     sources_branch = RunnableLambda(lambda x: x["sources"])
 
