@@ -18,8 +18,11 @@ from langchain_core.prompts import (
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
 =======
+=======
+>>>>>>> Stashed changes
 from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _unique_sources, LldGpmIDs, GpmClasses
 # -----------------------------
 # SYSTEM SETUP
@@ -85,6 +88,9 @@ Based on the categorization of LLD actions and gained GPM classes, analyze the P
         ),
     ]
 )
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 # -----------------------------
@@ -113,6 +119,7 @@ def build_rag_chain(vectordb: Chroma):
     )
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -125,6 +132,10 @@ def build_rag_chain(vectordb: Chroma):
             ),
         ]
     )
+=======
+    lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
+    gpm_classes_llm = llm.with_structured_output(GpmClasses)
+>>>>>>> Stashed changes
 =======
     lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
     gpm_classes_llm = llm.with_structured_output(GpmClasses)
@@ -163,17 +174,23 @@ def build_rag_chain(vectordb: Chroma):
 
     # Branch that generates the model answer (keeps only what the prompt expects)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     answer_branch = (
         RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"], "context": x["context"]})
         | prompt
         | llm
         | StrOutputParser()
 =======
+=======
+>>>>>>> Stashed changes
     lld_file_branch = (
         RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"]})
         | prompt_lld_file
         | lld_gmp_llm
         | RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x["lld_gpm_ids_knowledge"].to_string()})
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     )
 

@@ -17,7 +17,11 @@ from langchain_core.prompts import (
     # SystemMessage, # Removed incorrect import
 )
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from src.utilities import _download_pdf, _build_or_load_vector_store, _read_queryprompt, _retrieve_with_threshold, _unique_sources, _format_context_for_prompt
+=======
+from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
+>>>>>>> Stashed changes
 =======
 from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
 >>>>>>> Stashed changes
