@@ -63,13 +63,13 @@ Based on the provided information and knowledge, analyze and categorize actions 
         ),
     ]
 )
+
 prompt_gpm_file = ChatPromptTemplate.from_messages(
     [
         (
             "system",
             SYSTEM_PROMPT,
         ),
-        MessagesPlaceholder(variable_name="chat_history"),
         (
             "human",
             """
@@ -108,7 +108,7 @@ def build_rag_chain(vectordb: Chroma):
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
-    lld_gmp_llm = llm.with_structured_output(LldGpmIDs)
+    lld_gpm_llm = llm.with_structured_output(LldGpmIDs)
     gpm_classes_llm = llm.with_structured_output(GpmClasses)
 
     # Make the dictionary to store the output and resources!!!
@@ -143,20 +143,35 @@ def build_rag_chain(vectordb: Chroma):
     prepare_node = RunnableLambda(_prepare)
 
     # Branch that generates the model answer (keeps only what the prompt expects)
+    # x is the data dictionary coming from the previous node
     lld_file_branch = (
         RunnableLambda(lambda x: {"question": x["question"], "chat_history": x["chat_history"]})
         | prompt_lld_file
-        | lld_gmp_llm
-        | RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x["lld_gpm_ids_knowledge"].to_string()})
+        | lld_gpm_llm
+        | RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x})
+    )
+
+    # The output: {
+    # "original": {"question": "...","chat_history": [...],"sources": [...],"context": "...",...},
+    # "lld": {"lld_gpm_ids_knowledge": <LLMResult>}}
+    combined_branch = RunnableParallel(
+        original = lambda x: x,
+        lld = lld_file_branch,
     )
 
     gpm_file_branch = (
-        prompt_gpm_file
+        RunnableLambda(lambda x: {"lld_gpm_ids_knowledge": x["lld"]["lld_gpm_ids_knowledge"]})
+        | prompt_gpm_file
         | gpm_classes_llm
-        | RunnableLambda(lambda x: {"gpm_classes": x["gpm_classes"].to_string()})
+        | RunnableLambda(lambda x: {"gpm_classes": x})
     )
 
-    answer_branch = lld_file_branch | gpm_file_branch
+    # Combine_branch already inherits "original" and "lld" from [original]
+    answer_branch = RunnableParallel(
+        original = combined_branch | itemgetter("original"),
+        lld_gpm_ids_knowledge = combined_branch | itemgetter("lld") | itemgetter("lld_gpm_ids_knowledge"),
+        gpm_classes = combined_branch | gpm_file_branch | itemgetter("gpm_classes"),
+    )
 
     # Branch that passes sources through untouched
     sources_branch = RunnableLambda(lambda x: x["sources"])

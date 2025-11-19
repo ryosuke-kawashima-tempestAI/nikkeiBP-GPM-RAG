@@ -67,13 +67,17 @@ def main() -> None:
     target = _read_excel_file(TARGET_PATH)
 
     result = rag_chain.invoke({"question": target, "chat_history": history})
+    print(f"Result keys: {result.keys()}")
+    print(f"Result answer keys: {result['answer'].keys()}")
 
     # Pretty print
     print("=== Answer of LLD ===")
-    lld_gpm_ids: LldGpmIDs = result["lld_gpm_ids_knowledge"]
-    gpm_classes: GpmClasses = result["gpm_classes"]
-    target_with_gpm = target.copy()
+    lld_gpm_ids: LldGpmIDs = result["answer"]["lld_gpm_ids_knowledge"]
+    gpm_classes: GpmClasses = result["answer"]["gpm_classes"]
+    target_with_gpm = pd.read_excel(TARGET_PATH)
     target_with_gpm["ClassID"] = pd.Series(lld_gpm_ids.IDs)
+    print(f"GPM Classes: {type(gpm_classes)}")
+    # print(f"GPM Classes Keys: {gpm_classes.keys()}")
     target_with_gpm["ClassName"] = pd.Series(gpm_classes.ClassNames)
     target_with_gpm["Knowledge"] = pd.Series(lld_gpm_ids.knowledge)
     target_with_gpm.to_csv("./outputs/nikkeiBP_LLDs_with_GPM.csv", index=False)
