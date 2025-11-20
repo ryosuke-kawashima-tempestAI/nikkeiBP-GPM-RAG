@@ -57,7 +57,7 @@ def main() -> None:
     # Prepare data + vector store
     # _download_pdf(PDF_URL, PDF_PATH)
     vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
-    vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_excel("./documents/domain_knowledge.xlsx", PERSIST_DIR)
 
     # Build chain
     rag_chain = build_rag_chain(vectordb)
@@ -80,13 +80,13 @@ def main() -> None:
     # print(f"GPM Classes Keys: {gpm_classes.keys()}")
     target_with_gpm["ClassName"] = pd.Series(gpm_classes.ClassNames)
     target_with_gpm["Knowledge"] = pd.Series(lld_gpm_ids.knowledge)
-    target_with_gpm.to_csv("./outputs/nikkeiBP_LLDs_with_GPM.csv", index=False)
+    target_with_gpm.to_excel("./outputs/nikkeiBP_LLDs_with_GPM.xlsx", index=False, engine='openpyxl')
 
     print("=== Answer of GPM ===")
     gpm_file = pd.DataFrame(gpm_classes.IDs, columns=["ClassID"])
     gpm_file["ClassName"] = pd.Series(gpm_classes.ClassNames)
     gpm_file["PartOf"] = pd.Series(gpm_classes.PartOfs)
-    gpm_file.to_csv("./outputs/nikkeiBP_GPM_classes.csv", index=False)
+    gpm_file.to_excel("./outputs/nikkeiBP_GPM_classes.xlsx", index=False, engine='openpyxl')
 
     print("\n=== Sources ===")
     if result["sources"]:
