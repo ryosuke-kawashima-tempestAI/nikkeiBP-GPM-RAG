@@ -33,7 +33,7 @@ TARGET_PATH = "./target/nikkeiBP_LLDs.xlsx"
 GRAPH_PATH = "./knowledge_graphs/NikkeiBP_meronymy_hyponymy.mmd"
 
 # Persist vector DB to avoid recomputation across runs
-PERSIST_DIR = "chroma_db"
+PERSIST_DIR = "domain_db"
 
 # Retrieval defaults
 TOP_K = 10
@@ -56,8 +56,9 @@ def main() -> None:
 
     # Prepare data + vector store
     # _download_pdf(PDF_URL, PDF_PATH)
-    vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
-    vectordb, _ = _build_or_load_vector_store_from_excel("./documents/domain_knowledge.xlsx", PERSIST_DIR)
+    # vectordb, _ = _build_or_load_vector_store_from_pdf(PDF_PATH, PERSIST_DIR)
+    vectordb, _ = _build_or_load_vector_store_from_excel("./documents/domain_knowledge.xlsx", PERSIST_DIR, update=False)
+    vectordb, _ = _build_or_load_vector_store_from_excel("./documents/gpm_tips.xlsx", PERSIST_DIR, update=False)
 
     # Build chain
     rag_chain = build_rag_chain(vectordb)
