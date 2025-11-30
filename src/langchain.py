@@ -18,27 +18,7 @@ from langchain_core.prompts import (
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
 from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _format_context_for_prompt, _retrieve_with_threshold, _unique_sources, LldGpmIDs, GpmClasses
-# -----------------------------
-# SYSTEM SETUP
-# -----------------------------
-
-SYSTEM_PROMPT = """
-# Engineering Process Actions Categorization and Grouping
-
-## Role
-
-You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a sandwitch factory, making it both understandable and reusable.
-
-## Objective
-
-Summarize the problem-solving processes to create a representative, generic model of the improvement process of the sandwich factory.
-
-## Guidelines
-
-- LLD is an abbreaviation for Low Level Descriptions, which are detailed logs of actions taken during the process.
-- GPM is an abbreviation for General Process Model, which is a representative, generic model of the process gained from several LLDs.
-
-"""
+from config import *
 
 # -----------------------------
 # PROMPT TEMPLATE
@@ -52,13 +32,53 @@ prompt_lld_file = ChatPromptTemplate.from_messages(
         MessagesPlaceholder(variable_name="chat_history"),
         (
             "human",
-            """
+            f"""
 ## Task
 
-Based on the provided information and knowledge, analyze and categorize actions from improvement process logs of the sandwich factory.
-- [ ] First, extract all actions from the logs.
-- [ ] Then categorize them based on their similarities.
-- [ ] Finally, group similar actions together to form a structured representation of the improvement process with the **source** and **knowledge** you referred to.\n\n"""
+Based on the provided information and knowledge, analyze and categorize LLD actions from improvement process logs based on the given **Sources** section and **Work Process** section.
+
+## Sources
+
+- The output should be based on the given keyword list, tips of action classification, and the domain knowledge.
+
+Keyword List: \n{KEYWORD_LIST}
+
+Tips of Action Classification: \n{TIPS_OF_ACTION_CLASSIFICATION}
+
+Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
+
+## Work Process
+
+### Step 1: List all the actions
+
+- [ ] Explicitly list each action from the logs
+
+### Step 2: Classify actions
+
+- [ ] Categorize them based on their similarities into groups of GPM classes based on the **keyword list**.
+- [ ] You should refer to the **tips of action classification** and **domain knowledge** to classify the actions.
+
+### Step 3: Map each action to Groups
+
+- [ ] Each action should be assigned the ID and name of its group from Step2.
+- [ ] Source and Knowldge of action classification should be listed not only from **keyword list**, **tips of action classification** and **domain knowledge** but also from your knowledge.
+
+## Format
+
+- [ ] List all the actions in a table with the following columns.
+
+  - ClassID
+  - ClassName
+    - The name should be in Japanese.
+  - Knowledge
+
+## Constraints
+
+- [ ] The number of groups should be about **{NUMBER_OF_GROUPS}**.
+- [ ] If there are actions that are not assigned to any group, you need to create a new group for them.
+- [ ] There should be no actions left unassigned.
+
+            \n\n"""
             "Context:\n{chat_history}\n\nLLD Actions: {question}\n\nAnswer:"
         ),
     ]
@@ -72,12 +92,51 @@ prompt_gpm_file = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            """
+            f"""
 ## Task
 
-Based on the categorization of LLD actions and gained GPM classes, analyze the PartOf relationships among the GPM Classes.
-- [ ] First, analyze the correspondence of the LLD actions to the GPM classes based on the IDs.
-- [ ] Then, create a list of GPM classes with their IDs, ClassNames, and parent of the PartOf relations.\n\n"""
+Based on the provided given information about LLD action classification, create a GPM class relations. You should find the **Partof** relationship between the classes.
+
+## Sources
+
+- The output should be based on the given keyword list, tips of action classification, and the domain knowledge.
+
+Keyword List: \n{KEYWORD_LIST}
+
+Tips of Action Classification: \n{TIPS_OF_ACTION_CLASSIFICATION}
+
+Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
+
+## Work Process
+
+### Step 1: Group the GPM classes
+
+- [ ] Gather classes which deal with the same object, which can be from **keyword list**.
+- [ ] You should refer to the **tips of action classification** and **domain knowledge** to group the classes.
+
+### Step 2: Find the Partof relationship
+
+- [ ] Find the **Partof** relationship between the classes.
+  - [ ] if the verb of a class is a part of the verb of another class, then the first class is a part of the second class.
+- [ ] You should express how you found the **Partof** relationship as **RelationKnowledge**.
+
+## Format
+
+- [ ] List all the GPM classes in a table with the following columns.
+
+  - ClassID
+  - ClassName
+    - The name should be in Japanese.
+  - PartOfs
+    - The ID of the parent class.
+  - RelationKnowledge
+    - The knowledge related to the class.
+
+## Constraints
+
+- [ ] If there are classes that are not assigned to any group, you need to create a new group for them.
+- [ ] There should be no classes left unassigned.
+            \n\n"""
             "Context:\n{lld_gpm_ids_knowledge}\n\nAnswer:"
         ),
     ]
@@ -87,7 +146,7 @@ Based on the categorization of LLD actions and gained GPM classes, analyze the P
 # RAG Chain (LangChain)
 # -----------------------------
 
-def build_rag_chain(vectordb: Chroma):
+def build_rag_chain(vectordb: Chroma, RAG_MODE: bool = True):
     """Build a RAG pipeline that returns both the answer and its sources.
 
     This graph avoids `.select(...)` and composes two branches in parallel:
@@ -107,6 +166,7 @@ def build_rag_chain(vectordb: Chroma):
         temperature=0,
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
+    print("LLM has been initialized")
 
     lld_gpm_llm = llm.with_structured_output(LldGpmIDs)
     gpm_classes_llm = llm.with_structured_output(GpmClasses)
@@ -123,11 +183,9 @@ def build_rag_chain(vectordb: Chroma):
         """
         question = input_dict["question"]
         chat_history = input_dict.get("chat_history", [])
-        docs = _retrieve_with_threshold(vectordb, question, top_k, relevance_threshold)
+        docs = _retrieve_with_threshold(vectordb, question, top_k, relevance_threshold) if RAG_MODE else []
         context = _format_context_for_prompt(docs)
         sources = _unique_sources(docs)
-        lld_gpm_ids_knowledge = []
-        gpm_claasses = []
 
         # Stores the IDs of LLD and GPM
         return {
@@ -136,11 +194,10 @@ def build_rag_chain(vectordb: Chroma):
             "docs": docs,
             "context": context,
             "sources": sources,
-            "lld_gpm_ids_knowledge": lld_gpm_ids_knowledge,
-            "gpm_classes": gpm_claasses,
         }
 
     prepare_node = RunnableLambda(_prepare)
+    print("Prepare node has been initialized")
 
     # Branch that generates the model answer (keeps only what the prompt expects)
     # x is the data dictionary coming from the previous node

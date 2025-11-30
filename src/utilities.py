@@ -47,10 +47,11 @@ class GpmClasses(BaseModel):
     IDs: List[int]
     ClassNames: List[str]
     PartOfs: List[int]  # ID of the parent class
+    RelationKnowledge: List[str]
     def to_string(self) -> str:
         return "\n".join(
-            f"GPM Class ID {cid}: Class Name: {cname}, Part Of: {partof}"
-            for cid, cname, partof in zip(self.IDs, self.ClassNames, self.PartOfs)
+            f"GPM Class ID {cid}: Class Name: {cname}, Part Of: {partof}, Relation Knowledge: {relation_knowledge}"
+            for cid, cname, partof, relation_knowledge in zip(self.IDs, self.ClassNames, self.PartOfs, self.RelationKnowledge)
         )
 
 # -----------------------------
@@ -72,7 +73,7 @@ def _download_pdf(url: str, dst_path: str) -> None:
     with open(dst_path, "wb") as f:
         f.write(resp.content)
 
-def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
+def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update=False, RAG_MODE=False) -> Tuple[Chroma, List[Document]]:
     """Load pages, chunk them, and build/persist a Chroma vector store.
 
     This function is idempotent—if a persisted DB exists, it will be reused.
@@ -84,6 +85,8 @@ def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update
     Returns:
         A tuple of (vector_store, all_chunks).
     """
+    if not RAG_MODE:
+        return None, None
     # Load pages with metadata (PyPDFLoader populates "source" and "page")
     pages = PyPDFLoader(pdf_path).load()
     print(f"Document's Pages: {len(pages)}")
@@ -122,7 +125,7 @@ def _build_or_load_vector_store_from_pdf(pdf_path: str, persist_dir: str, update
 
     return vectordb, chunks
 
-def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, update=False) -> Tuple[Chroma, List[Document]]:
+def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, update=False, RAG_MODE=False) -> Tuple[Chroma, List[Document]]:
     """Load Excel file, chunk its content, and build/persist a Chroma vector store.
 
     This function is idempotent—if a persisted DB exists, it will be reused.
@@ -133,6 +136,8 @@ def _build_or_load_vector_store_from_excel(excel_path: str, persist_dir: str, up
     Returns:
         A tuple of (vector_store, all_chunks).
     """
+    if not RAG_MODE:
+        return None, None
     df = pd.read_excel(excel_path)
     docs = []
     for i, row in df.iterrows():
