@@ -29,6 +29,9 @@ MANIFEST
 # My Document
 documents/
 chroma_db/
+domain_db/
+outputs/
+designing/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
