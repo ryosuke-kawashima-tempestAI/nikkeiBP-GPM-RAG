@@ -20,6 +20,7 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.documents import Document
 from pathlib import Path
 from pydantic import BaseModel
+import datetime
 # -----------------------------
 # Configuration
 # -----------------------------
@@ -46,12 +47,14 @@ class GpmClasses(BaseModel):
     """GPM Class assigned to each LLD action"""
     IDs: List[int]
     ClassNames: List[str]
+    ClassInputs: List[str]
+    ClassOutputs: List[str]
     PartOfs: List[int]  # ID of the parent class
     RelationKnowledge: List[str]
     def to_string(self) -> str:
         return "\n".join(
-            f"GPM Class ID {cid}: Class Name: {cname}, Part Of: {partof}, Relation Knowledge: {relation_knowledge}"
-            for cid, cname, partof, relation_knowledge in zip(self.IDs, self.ClassNames, self.PartOfs, self.RelationKnowledge)
+            f"GPM Class ID: {cid}, Class Input: {class_input}, Class Name: {cname}, Class Output: {class_output}, Part Of: {partof}, Relation Knowledge: {relation_knowledge}"
+            for cid, class_input, cname, class_output, partof, relation_knowledge in zip(self.IDs, self.ClassInputs, self.ClassNames, self.ClassOutputs, self.PartOfs, self.RelationKnowledge)
         )
 
 # -----------------------------
@@ -246,6 +249,8 @@ def _retrieve_with_threshold(vectordb: Chroma, query: str, top_k: int, threshold
     Returns:
         Filtered list of Documents sorted by score descending.
     """
+    if not vectordb:
+        return []
     scored = vectordb.similarity_search_with_relevance_scores(query, k=top_k)
     # Keep only items meeting the threshold; each item is (Document, score)
     filtered = [(doc, sc) for doc, sc in scored if sc is not None and sc >= threshold]
@@ -329,3 +334,8 @@ def _read_excel_file(file_path: str) -> str:
         )
     combined_text = "\n\n".join(doc.page_content for doc in docs)
     return combined_text
+
+def get_current_datetime_components():
+    """Returns the current year, month, day, hour, and minute as formatted strings."""
+    now = datetime.datetime.now()
+    return f"{now.strftime("%Y")}-{now.strftime("%m")}-{now.strftime("%d")}-{now.strftime("%H")}-{now.strftime("%M")}"

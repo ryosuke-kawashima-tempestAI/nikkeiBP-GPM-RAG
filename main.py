@@ -14,19 +14,13 @@ from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
     HumanMessagePromptTemplate,
-    # SystemMessage, # Removed incorrect import
+    # SystemMessage, Removed incorrect import
 )
 
-from src.utilities import _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
+from src.utilities import get_current_datetime_components, _download_pdf, _build_or_load_vector_store_from_pdf, _build_or_load_vector_store_from_excel, _read_queryprompt, _retrieve_with_threshold, _read_mermaid_file, _read_excel_file, LldGpmIDs, GpmClasses
 from src.langchain import build_rag_chain
 from config import *
 import datetime
-
-def get_current_datetime_components():
-    """Returns the current year, month, day, hour, and minute as formatted strings."""
-    now = datetime.datetime.now()
-    return f"{now.strftime("%Y")}-{now.strftime("%m")}-{now.strftime("%d")}-{now.strftime("%H")}-{now.strftime("%M")}"
-    
 
 # -----------------------------
 # Main
@@ -70,14 +64,16 @@ def main() -> None:
     # print(f"GPM Classes Keys: {gpm_classes.keys()}")
     target_with_gpm["ClassName"] = pd.Series(gpm_classes.ClassNames)
     target_with_gpm["Knowledge"] = pd.Series(lld_gpm_ids.knowledge)
-    target_with_gpm.to_excel(f"./outputs/nikkeiBP_LLDs_with_GPM-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
+    target_with_gpm.to_excel(f"./outputs/learningFactory_LLDs_with_GPM-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
 
     print("=== Answer of GPM ===")
     gpm_file = pd.DataFrame(gpm_classes.IDs, columns=["ClassID"])
+    gpm_file["ClassInput"] = pd.Series(gpm_classes.ClassInputs)
     gpm_file["ClassName"] = pd.Series(gpm_classes.ClassNames)
+    gpm_file["ClassOutput"] = pd.Series(gpm_classes.ClassOutputs)
     gpm_file["PartOf"] = pd.Series(gpm_classes.PartOfs)
     gpm_file["RelationKnowledge"] = pd.Series(gpm_classes.RelationKnowledge)
-    gpm_file.to_excel(f"./outputs/nikkeiBP_GPM_classes-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
+    gpm_file.to_excel(f"./outputs/learningFactory_GPM_classes-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
 
     print("\n=== Sources ===")
     if result["sources"]:
