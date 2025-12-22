@@ -59,6 +59,8 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
 
 - [ ] Categorize them based on their similarities into groups of GPM classes based on the **keyword list**.
 - [ ] You should refer to the **tips of action classification** and **domain knowledge** to classify the actions.
+- [ ] You should make sure that the **operation names** of GPM classes express the **operations** of LLD actions, which they are based on.
+- [ ] You should make sure that the **target objects** of GPM classes' names express the **target objects** of LLD actions' names, which they are based on.
 
 ### Step 3: Map each action to Groups
 

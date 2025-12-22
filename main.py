@@ -64,7 +64,7 @@ def main() -> None:
     # print(f"GPM Classes Keys: {gpm_classes.keys()}")
     target_with_gpm["ClassName"] = pd.Series(gpm_classes.ClassNames)
     target_with_gpm["Knowledge"] = pd.Series(lld_gpm_ids.knowledge)
-    target_with_gpm.to_excel(f"./outputs/learningFactory_LLDs_with_GPM-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
+    target_with_gpm.to_excel(f"./outputs/ma_welding_LLDs_with_GPM-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
 
     print("=== Answer of GPM ===")
     gpm_file = pd.DataFrame(gpm_classes.IDs, columns=["ClassID"])
@@ -73,7 +73,7 @@ def main() -> None:
     gpm_file["ClassOutput"] = pd.Series(gpm_classes.ClassOutputs)
     gpm_file["PartOf"] = pd.Series(gpm_classes.PartOfs)
     gpm_file["RelationKnowledge"] = pd.Series(gpm_classes.RelationKnowledge)
-    gpm_file.to_excel(f"./outputs/learningFactory_GPM_classes-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
+    gpm_file.to_excel(f"./outputs/ma_welding_GPM_classes-{get_current_datetime_components()}.xlsx", index=False, engine='openpyxl')
 
     print("\n=== Sources ===")
     if result["sources"]:

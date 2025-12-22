@@ -5,7 +5,7 @@ import os
 # -----------------------------
 APIKEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = APIKEY
-TARGET_PATH = "./target/learning_factory_llds.xlsx"
+TARGET_PATH = "./target/ma_welding_llds.xlsx"
 # RAG Mode
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
@@ -26,11 +26,11 @@ SYSTEM_PROMPT = """
 
 ## Role
 
-You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a **LEGO cars** factory, making it both understandable and reusable.
+You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a **Car Welding** process, making it both understandable and reusable.
 
 ## Objective
 
-Summarize the problem-solving processes to create a representative, generic model of the improvement process of the **LEGO cars** factory.
+Summarize the problem-solving processes to create a representative, generic model of the improvement process of the **Car Welding** process.
 
 ## Context
 
@@ -38,21 +38,23 @@ Summarize the problem-solving processes to create a representative, generic mode
 - GPM is an abbreviation for General Process Model, which is a representative, generic model of the process gained from several LLDs.
 
 """
-NUMBER_OF_GROUPS = 30
+# Roughly as many groups as the one by the human knowledge engineer
+NUMBER_OF_GROUPS = 45
 KEYWORD_LIST = """
-- ロボット
-- サイクルタイム (CT)
-- マシン
-    - マシン１
-    - マシン２
-    - マシン３
-- パレット
-- ルーフ部品
-- ライン
-- 観測結果
-- 短縮方針
-- 完成品
-- タイヤ
+300dフロントピラー
+基準3a
+基準3b
+基準3c
+300Dトルーフ
+トリムライン
+120D
+SQ101
+W/Hアウターパネル
+32Dセンターフロア
+部品460B ラダーAssy
+ロッカーインナRr
+M治具基準SQ101
+固定用W副基準
 """
 
 # General Strategic Knowledge
@@ -63,13 +65,65 @@ TIPS_OF_ACTION_CLASSIFICATION = """
 - アクションを類別する際にInputとOutputが類似しているかを考慮するべき。
 - アクションのラベルが違う場合でもIntentionが類似している場合は同じグループに入れる。
 - アクションが生成する入力と出力に含まれるキーワードの意味の類似性をもとにGPMのクラスを生成する。
+- GPMのクラスを生成する際に、元となるLLDの動詞とGPMの動詞を**類似**させる。
+- GPMのクラスを生成する際に、元となるLLDのアクションの目的語とGPMのクラスの目的語を**類似**させる。
 """
 
 # Specific Domain Knowledge
 DOMAIN_KNOWLEDGE = """
 ### Domain Rules
 
+- 300Dフロントピラーは組付け精度を決定する部位である。
+- 基準3aは300Dフロントピラーの基準位置を決定する。
+- 基準3bは300Dフロントピラーの基準位置を決定する。
+- 基準3cは300Dフロントピラーの基準位置を決定する。
+- 300Dトルーフは組付け精度を決定する部位である。
+- トリムラインは300Dトルーフを含めた全体の剛性を確保する。
+- 120Dは組付け精度を決定する部位である。
+- SQ101は120Dの組付け精度を決定する基準である。
+- W/Hアウターパネルの剛性は部品の単体制度に影響を与える。
+- 32Dセンターフロアは部品の単体精度に影響を与える。
+- 部品460B ラダーAssyは部品の単体精度に影響を与える。
+- ロッカーインナRrは部品460B ラダーAssyの組付け精度が低い場合に外出する部位である。
+- 固定用W副基準は300Dトルーフ単品を固定するための基準である。
+- 溶接工程の部品の精度の不良について(1)基準位置が悪くて変形する(2)治具の締め付けが悪くて変形する(3)プレス成型の形状が寸法通りでない、の3通りの要因が考えられる。
+
 ### Domain Examples
+
+Example 1:
+    LLD Actions: 
+        - 選択されたサブプロセスに対して隙間の解消案を立案する
+            - ID: 55
+            - Input: 選択したサブプロセス：300Dトルーフの単体精度不良
+            - Output: 300Dトルーフのパネル形状を変更する
+        - 300Dトルーフ単品の形状変更の位置を決める
+            - ID: 56
+            - Input: 300Dトルーフのパネル形状を変更する
+            - Output: 300Dトルーフの形状変更位置：トリムライン
+        - 300Dトルーフ単品の形状変更の形を決める
+            - ID: 57
+            - Input: 300Dトルーフの形状変更位置：トリムライン
+            - Output: トリムライン形状変更案
+    GPM Answers:
+        GPM Action 1: 着目すべき原因を選定する
+            - Refrence LLD ID: 55
+            - Input: 300Dトルーフの単体精度不良
+            - Output: 300Dトルーフのパネル形状を変更する
+            - PartOf: Another GPM Action
+        GPM Action 2: 原因と推定される部品の位置を決定する
+            - Refrence LLD ID: 56
+            - Input: 原因と推定される部品
+            - Output: 部品の変更先の位置
+            - PartOf: GPM Action 1
+        GPM Action 3: 原因とされる部品の形状を決定する
+            - Refrence LLD ID: 57
+            - Input: 原因とされる部品や基準部位
+            - Output: 部品の形状変更案
+            - PartOf: GPM Action 1
+    Reasoning:
+        - まずはLLDの動詞とGPMの動詞を類似させる
+        - 次にLLDの目的語とGPMの目的語を類似させる
+        - 300Dトルーフ単品の形状変更の位置や300Dトルーフ単品の形状変更の形は隙間の解消案に含まれるので、GPM Action 2とGPM Action 3はGPM Action 1のPartOfである。
 
 """
 
