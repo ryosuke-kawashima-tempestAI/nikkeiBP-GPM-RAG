@@ -39,7 +39,7 @@ Summarize the problem-solving processes to create a representative, generic mode
 
 """
 # Roughly as many groups as the one by the human knowledge engineer
-NUMBER_OF_GROUPS = 45
+NUMBER_OF_GROUPS = 35
 KEYWORD_LIST = """
 300dフロントピラー
 基準3a
@@ -137,3 +137,6 @@ EVALUATION_CRITERIA = """
     - You need to mention the reason of why the sequential order of LLD actions should be preserved in the corresponding GPM classes.
     - If the sequential order of LLD does not have to be preseved, you need to point out the reason to justify this.
 """
+# parameters for the top-down approach
+NUMBER_OF_TOP = 5
+NUMBER_FOR_EACH_CONTAINER = 3

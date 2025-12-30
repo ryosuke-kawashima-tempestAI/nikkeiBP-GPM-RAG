@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 from langchain_community.document_loaders import PyPDFLoader
 import requests
 import os
@@ -60,6 +60,11 @@ class GpmClasses(BaseModel):
 # -----------------------------
 # Utilities Functions
 # -----------------------------
+
+def read_excel_to_json(excel_path: str) -> List[Dict[str, Any]]:
+    """Read an Excel file and return its content as a list of dictionaries."""
+    df = pd.read_excel(excel_path)
+    return df.to_dict(orient="records")
 
 def _download_pdf(url: str, dst_path: str) -> None:
     """Download a PDF if it does not exist.

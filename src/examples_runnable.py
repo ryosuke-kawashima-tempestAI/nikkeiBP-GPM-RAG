@@ -1,4 +1,4 @@
-from langchain_core.runnables import RunnableLambda, RunnableSequence, RunnableParallel
+from langchain_core.runnables import RunnableLambda, RunnableSequence, RunnableParallel, RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
@@ -132,6 +132,82 @@ def complex_pipeline_example():
     result = full_chain.invoke({"question": "What is LangChain?"})
     print(f"Final Answer: {result}\n")
 
+def runnable_assign_example():
+    """
+    Example 5: Using RunnablePassthrough.assign to add values to the dictionary.
+    This is extremely useful when you want to calculate a value and keep the original input,
+    or build up a context dictionary step-by-step without using big RunnableParallel blocks.
+    """
+    print("--- Example 5: RunnablePassthrough.assign ---")
+    
+    model = ChatOpenAI(model="gpt-4o-mini")
+    
+    # Let's say we have an input: {"question": "..."}
+    # We want to:
+    # 1. Calculate the length of the question.
+    # 2. Translate the question to French.
+    # 3. Use both the original question and the translation to generate a summary.
+    
+    def get_length(input_dict):
+        return len(input_dict["question"])
+    
+    translation_chain = (
+        ChatPromptTemplate.from_template("Translate to French: {question}") 
+        | model 
+        | StrOutputParser()
+    )
+    
+    # .assign() creates a NEW key in the dictionary with the result of the runnable.
+    # It passes the CURRENT state to the runnable.
+    chain = (
+        RunnablePassthrough.assign(length=RunnableLambda(get_length))  # Adds 'length'
+        | RunnablePassthrough.assign(french_translation=translation_chain) # Adds 'french_translation'
+        | RunnablePassthrough.assign(
+            # We can use the NEW keys immediately in subsequent steps if we wanted to
+            upper_french=lambda x: x["french_translation"].upper() 
+        )
+    )
+    
+    # Let's invoke it and see the intermediate state (which is the final result of this chain)
+    result = chain.invoke({"question": "Hello world"})
+    
+    print("Resulting Dictionary State:")
+    print(f"Original Question: {result['question']}")
+    print(f"Calculated Length: {result['length']}")
+    print(f"French Translation: {result['french_translation']}")
+    print(f"Uppercase French: {result['upper_french']}")
+    print("\n")
+
+def runnable_pick_example():
+    """
+    Example 6: Using .pick() to select specific keys from the dictionary.
+    This is useful for cleaning up the state or passing only specific arguments to the next step.
+    """
+    print("--- Example 6: Runnable .pick() ---")
+    
+    # Initial state
+    initial_dict = {
+        "question": "What is AI?",
+        "context": "AI stands for Artificial Intelligence.",
+        "extra_info": "This should be discarded."
+    }
+    
+    # 1. Pick a single key
+    # Returns just the value of that key
+    # This is equivalent to: itemgetter("context")
+    pick_one = RunnablePassthrough().pick("context")
+    result_one = pick_one.invoke(initial_dict)
+    print(f"Picked 'context': {result_one}")
+    print(f"Type: {type(result_one)}") # Should be str
+    
+    # 2. Pick multiple keys
+    # Returns a new dictionary with only the selected keys
+    pick_multiple = RunnablePassthrough().pick(["question", "context"])
+    result_multiple = pick_multiple.invoke(initial_dict)
+    print(f"Picked multiple: {result_multiple}")
+    
+    print("\n")
+
 if __name__ == "__main__":
     # Check for API Key
     if not os.environ.get("OPENAI_API_KEY"):
@@ -141,3 +217,5 @@ if __name__ == "__main__":
         explicit_sequence_example()
         runnable_lambda_example()
         complex_pipeline_example()
+        runnable_assign_example()
+        runnable_pick_example()
