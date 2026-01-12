@@ -1,5 +1,5 @@
 from typing import List, Dict
-from config import SYSTEM_PROMPT, KEYWORD_LIST, TIPS_OF_ACTION_CLASSIFICATION, DOMAIN_KNOWLEDGE, NUMBER_OF_GROUPS, NUMBER_OF_TOP, NUMBER_FOR_EACH_CONTAINER, EVALUATION_CRITERIA
+from config import SYSTEM_PROMPT, KEYWORD_LIST, TIPS_OF_ACTION_CLASSIFICATION, DOMAIN_KNOWLEDGE, NUMBER_OF_GROUPS, NUMBER_OF_TOP, EVALUATION_CRITERIA
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
@@ -203,17 +203,17 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
 
 ### Step 2: Classify actions by the most general classification
 
-- [ ] Categorize them based on their similarities into groups of GPM classes based on the **keyword list**.
-- [ ] You should refer to the **tips of action classification** and **domain knowledge** to classify the actions.
+- [ ] Categorize them based on their similarities into groups of GPM classes based on the operations and objects of LLD actions.
+- [ ] You should refer to the **Sources** section to classify the actions.
 - [ ] The number of this most general classification should be **{NUMBER_OF_TOP}**.
 - [ ] You should clarify the reason of the classification.
 
 ### Step 3: Classify actions by more specific classification
 
 - [ ] Some groups should be further classified into subgroups **recursively**.
-  - [ ] This process should be repeated until the total number of gpm classes is about **{NUMBER_OF_GROUPS}**.
+  - [ ] This process should be repeated as long as the total number of gpm classes is within **{NUMBER_OF_GROUPS}**.
   - [ ] Some LLD actions are not assigned to more specific classification, while others are assigned to more specific classification.
-- [ ] Source and Knowldge of action classification should be listed not only from **keyword list**, **tips of action classification** and **domain knowledge** but also from your knowledge.
+- [ ] Source and Knowldge of action classification should be listed not only from **Sources** section but also from your knowledge.
 - [ ] You should clarify the reason of the classification.
 
 ### Step 4: Assign the GPM ID and Class Name to every action
@@ -243,16 +243,18 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
     - If the action is the top level action, it should be 0.
   - ClassificationReason
     - String. It should be the reason of the classification of LLD actions to GPM classes.
+    - You should clarify which part on **Sources** section you refer to when you construct the classification of LLD actions to GPM classes.
+    - You can add your own knowledge when you construct the classification of LLD actions to GPM classes.
   - PartOfReason
     - String. It should be the reason of the PartOf relationship of GPM classes.
+    - You should clarify which part on **Sources** section you refer to when you construct the PartOf relationship of GPM classes.
+    - You can add your own knowledge when you construct the PartOf relationship of GPM classes.
 
 ## Constraints
 
-- [ ] The total number of GPM classes should be about **{NUMBER_OF_GROUPS}**.
+- [ ] The total number of GPM classes should be **no more than {NUMBER_OF_GROUPS}**.
 - [ ] The number of class IDs should be exactly **the same as the number of LLD actions**.
-- [ ] If there are actions that are not assigned to any group, you need to create a new group for them.
 - [ ] You must not make blanks on **ClassID** and **PartOf**.
-- [ ] There should be no actions left unassigned.
 - [ ] You should assign the ID and name of the group to **every** action.
 
             \n\n"""
@@ -295,13 +297,13 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
 ### Step 2: Reconstruct the elements of GPM classes
 
 - [ ] Reconstruct the elements of GPM classes based on the **Sources** section.
-  - [ ] You should reconstruct the input, output, and intention of every GPM class based on those of the LLD actions which each GPM class is made of.
+  - [ ] You should reconstruct the input, class name, output, and intention of every GPM class based on those of the LLD actions which each GPM class is made of.
 - [ ] You should clarify the reason of the reconstruction.
 
 ### Step 3: Evaluate the reconstruction of GPM classes and the reasoning process
 
 - [ ] Based on the provided information and knowledge, evaluate the reconstruction of GPM classes.
-- [ ] Then, refine and improve the reconstruction of GPM classes, referring to the **Sources** section.
+- [ ] Then, refine and improve the reconstruction of GPM classes so that the meanings of the GPM classes are aligned with the LLD actions which each GPM class is made of.
 
 ## Format
 
@@ -319,12 +321,14 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
     - String. It should be the intention of the action.
   - ReconstructionReason
     - String. It should be the reason of the reconstruction of the GPM classes.
+    - You should clarify which part on **Sources** section you refer to when you construct the reconstruction of the GPM classes.
+    - You can add your own knowledge when you construct the reconstruction of the GPM classes.
 
 ## Constraints
 
 - [ ] You must not make blanks on **ClassName**.
+- [ ] You should **not shuffle** the order of the GPM classes.
 - [ ] The total number of GPM classes should be exactly the same as the number of ClassIDs in the **GPM Grouping Data**.
-- [ ] There should be no GPM classes left unassigned.
 - [ ] You should assign the ID and name of the group to **every** GPM class.
 
             \n\n"""
@@ -333,6 +337,7 @@ Domain Knowledge: \n{DOMAIN_KNOWLEDGE}
     ]
 )
 
+# === Evaluation ===
 prompt_evaluation = ChatPromptTemplate.from_messages(
     [
         (

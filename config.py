@@ -5,7 +5,7 @@ import os
 # -----------------------------
 APIKEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = APIKEY
-TARGET_PATH = "./target/ma_welding_llds.xlsx"
+TARGET_PATH = "./target/learning_factory_llds.xlsx"
 # RAG Mode
 PDF_URL = "https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/r05/pdf/00zentai.pdf"
 PDF_PATH = "./documents/nikkeiBP_day5.pdf"
@@ -26,11 +26,11 @@ SYSTEM_PROMPT = """
 
 ## Role
 
-You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a **Car Welding** process, making it both understandable and reusable.
+You are a **Knowledge Engineer**, responsible for designing models that capture and structure process knowledge at a **LEGO car factory** process, making it both understandable and reusable.
 
 ## Objective
 
-Summarize the problem-solving processes to create a representative, generic model of the improvement process of the **Car Welding** process.
+Summarize the problem-solving processes to create a representative, generic model of the improvement process of the **LEGO car factory** process.
 
 ## Context
 
@@ -39,92 +39,71 @@ Summarize the problem-solving processes to create a representative, generic mode
 
 """
 # Roughly as many groups as the one by the human knowledge engineer
-NUMBER_OF_GROUPS = 35
+# parameters for the top-down approach
+NUMBER_OF_TOP = 5
+NUMBER_OF_GROUPS = 25
 KEYWORD_LIST = """
-300dフロントピラー
-基準3a
-基準3b
-基準3c
-300Dトルーフ
-トリムライン
-120D
-SQ101
-W/Hアウターパネル
-32Dセンターフロア
-部品460B ラダーAssy
-ロッカーインナRr
-M治具基準SQ101
-固定用W副基準
+- マシン１
+- マシン２
+- マシン３
+- IoT Data View
+- fastSUITE
 """
 
 # General Strategic Knowledge
 TIPS_OF_ACTION_CLASSIFICATION = """
-- アクションを類別する際にアクションに含まれるキーワードとなる名詞に着目して、同じあるいは似た意味の名詞を含むアクションをもとに分類する。
+- GPMの包含関係において上位に来るアクションとして下位のアクションに比べて一般的あるいは抽象的なアクションを設定する。
 - 次にキーワードに対する動作つまり動詞の類似性に着目してアクションを類別する。
+- アクションのラベルが違う場合でもIntentionが類似している場合は同じグループに入れる。
+- GPMのクラスを生成する際に、元となるLLDの動詞とGPMの動詞を**類似**させる。
+- アクションが生成する入力と出力に含まれるキーワードの意味の類似性をもとにGPMのクラスを生成する。
 - 複数個前に行ったアクションの結果が後のアクションの結果に響くことがあるので、前後のアクションの情報を参照する必要がある。
 - アクションを類別する際にInputとOutputが類似しているかを考慮するべき。
-- アクションのラベルが違う場合でもIntentionが類似している場合は同じグループに入れる。
-- アクションが生成する入力と出力に含まれるキーワードの意味の類似性をもとにGPMのクラスを生成する。
-- GPMのクラスを生成する際に、元となるLLDの動詞とGPMの動詞を**類似**させる。
 - GPMのクラスを生成する際に、元となるLLDのアクションの目的語とGPMのクラスの目的語を**類似**させる。
+- アクションを類別する際にアクションに含まれるキーワードとなる名詞に着目して、同じあるいは似た意味の名詞を含むアクションをもとに分類する。
 """
 
 # Specific Domain Knowledge
 DOMAIN_KNOWLEDGE = """
 ### Domain Rules
 
-- 300Dフロントピラーは組付け精度を決定する部位である。
-- 基準3aは300Dフロントピラーの基準位置を決定する。
-- 基準3bは300Dフロントピラーの基準位置を決定する。
-- 基準3cは300Dフロントピラーの基準位置を決定する。
-- 300Dトルーフは組付け精度を決定する部位である。
-- トリムラインは300Dトルーフを含めた全体の剛性を確保する。
-- 120Dは組付け精度を決定する部位である。
-- SQ101は120Dの組付け精度を決定する基準である。
-- W/Hアウターパネルの剛性は部品の単体制度に影響を与える。
-- 32Dセンターフロアは部品の単体精度に影響を与える。
-- 部品460B ラダーAssyは部品の単体精度に影響を与える。
-- ロッカーインナRrは部品460B ラダーAssyの組付け精度が低い場合に外出する部位である。
-- 固定用W副基準は300Dトルーフ単品を固定するための基準である。
-- 溶接工程の部品の精度の不良について(1)基準位置が悪くて変形する(2)治具の締め付けが悪くて変形する(3)プレス成型の形状が寸法通りでない、の3通りの要因が考えられる。
+- マシン１は6軸ロボットである．
+- マシン２はスカラロボットである．
+- マシン３は直行ロボットである．
+- IoT Data ViewはラインのIoTデータを表・グラフ形式で表示する．
+- サイクルタイム：製品１個が，１つの工程を終えるのに要する時間
+- 自動化工場を模擬した設備であるラーニングファクトリーを対象に，サイクルタイムを短縮するための案を導出する．
+- 実際にラーニングファクトリーが稼働している様子を見て，サイクルタイムを遅くしている原因の特定及びその解決策を検討する．
+- 大きく3つのマシンに分かれる．
+- 各マシンにロボットが1つ含まれている．
+- ロボットは，ベルトコンベアで運搬されるパレット上で組立/検査作業を実施
+- コントローラが，生産ラインの動きを制御をしている．
+- ロボット・コントローラ：　ロボットの軌跡，速さ，起動タイミング等のロボットの動きを制御
+- プログラマブル・ロジック・コントローラ（PLC），アクチュエータ・コントローラが機械の変位やベルトコンベアの速さ等のロボット以外（ベルトコンベアや，その他のアクチュエータなど）の機械の動きを制御
+- fastSUITEはコントローラのI/O信号を取得して，実ラインと同期して動くシミュレーションソフトである．
+- 本ラーニングファクトリーでは，サイクルタイムを2種類の方法で表示可能である(1. 各マシンのモニタ　に表示 2. IoT Data View に表示)
 
 ### Domain Examples
 
+- サイクルタイムの確認は生産ラインの現状把握を行うための行為の一つである。
+
+"""
+
+ExampleTemplate = """
 Example 1:
     LLD Actions: 
-        - 選択されたサブプロセスに対して隙間の解消案を立案する
-            - ID: 55
-            - Input: 選択したサブプロセス：300Dトルーフの単体精度不良
-            - Output: 300Dトルーフのパネル形状を変更する
-        - 300Dトルーフ単品の形状変更の位置を決める
-            - ID: 56
-            - Input: 300Dトルーフのパネル形状を変更する
-            - Output: 300Dトルーフの形状変更位置：トリムライン
-        - 300Dトルーフ単品の形状変更の形を決める
-            - ID: 57
-            - Input: 300Dトルーフの形状変更位置：トリムライン
-            - Output: トリムライン形状変更案
-    GPM Answers:
-        GPM Action 1: 着目すべき原因を選定する
-            - Refrence LLD ID: 55
-            - Input: 300Dトルーフの単体精度不良
-            - Output: 300Dトルーフのパネル形状を変更する
-            - PartOf: Another GPM Action
-        GPM Action 2: 原因と推定される部品の位置を決定する
-            - Refrence LLD ID: 56
-            - Input: 原因と推定される部品
-            - Output: 部品の変更先の位置
-            - PartOf: GPM Action 1
-        GPM Action 3: 原因とされる部品の形状を決定する
-            - Refrence LLD ID: 57
-            - Input: 原因とされる部品や基準部位
-            - Output: 部品の形状変更案
-            - PartOf: GPM Action 1
-    Reasoning:
-        - まずはLLDの動詞とGPMの動詞を類似させる
-        - 次にLLDの目的語とGPMの目的語を類似させる
-        - 300Dトルーフ単品の形状変更の位置や300Dトルーフ単品の形状変更の形は隙間の解消案に含まれるので、GPM Action 2とGPM Action 3はGPM Action 1のPartOfである。
-
+            - 選択されたサブプロセスに対して隙間の解消案を立案する
+                - ID: 55
+                - Input: 選択したサブプロセス：300Dトルーフの単体精度不良
+                - Output: 300Dトルーフのパネル形状を変更する
+        GPM Answers:
+            GPM Action 1: 着目すべき原因を選定する
+                - Refrence LLD ID: 55
+                - Input: 300Dトルーフの単体精度不良
+                - Output: 300Dトルーフのパネル形状を変更する
+                - PartOf: Another GPM Action
+        Reasoning:
+            - 
 """
 
 EVALUATION_CRITERIA = """
@@ -137,6 +116,19 @@ EVALUATION_CRITERIA = """
     - You need to mention the reason of why the sequential order of LLD actions should be preserved in the corresponding GPM classes.
     - If the sequential order of LLD does not have to be preseved, you need to point out the reason to justify this.
 """
-# parameters for the top-down approach
-NUMBER_OF_TOP = 5
-NUMBER_FOR_EACH_CONTAINER = 3
+
+KEYWORD_TEPMPLATE = """
+- ロボット
+- サイクルタイム (CT)
+- マシン
+    - マシン１
+    - マシン２
+    - マシン３
+- パレット
+- ルーフ部品
+- ライン
+- 観測結果
+- 短縮方針
+- 完成品
+- タイヤ
+"""

@@ -32,10 +32,10 @@ class LLDGrouping(BaseModel):
     
     def to_dict(self):
         return {
-            "ClassIDs": [x.ClassID for x in self.LLDGroupingElements],
-            "PartOfs": [x.PartOf for x in self.GPMPartOfElements],
-            "ClassificationReasons": [x.ClassificationReason for x in self.LLDGroupingElements],
-            "PartOfReasons": [x.PartOfReason for x in self.GPMPartOfElements],
+            "ClassID": [x.ClassID for x in self.LLDGroupingElements],
+            "PartOf": [x.PartOf for x in self.GPMPartOfElements],
+            "ClassificationReason": [x.ClassificationReason for x in self.LLDGroupingElements],
+            "PartOfReason": [x.PartOfReason for x in self.GPMPartOfElements],
         }
     
     def to_json(self):
@@ -57,17 +57,19 @@ class GPMReconstructionElement(BaseModel):
     ClassName: str
     ClassOutput: str
     ClassIntent: str
+    ClassConstructionReason: str
 
 class GPMReconstruction(BaseModel):
     GPMReconstructionElements: List[GPMReconstructionElement]
     
     def to_dict(self):
         return {
-            "ClassIDs": [x.ClassID for x in self.GPMReconstructionElements],
-            "ClassInputs": [x.ClassInput for x in self.GPMReconstructionElements],
-            "ClassNames": [x.ClassName for x in self.GPMReconstructionElements],
-            "ClassOutputs": [x.ClassOutput for x in self.GPMReconstructionElements],
-            "ClassIntents": [x.ClassIntent for x in self.GPMReconstructionElements],
+            "ClassID": [x.ClassID for x in self.GPMReconstructionElements],
+            "ClassInput": [x.ClassInput for x in self.GPMReconstructionElements],
+            "ClassName": [x.ClassName for x in self.GPMReconstructionElements],
+            "ClassOutput": [x.ClassOutput for x in self.GPMReconstructionElements],
+            "ClassIntent": [x.ClassIntent for x in self.GPMReconstructionElements],
+            "ClassConstructionReason": [x.ClassConstructionReason for x in self.GPMReconstructionElements],
         }
     
     def to_json(self):
@@ -130,11 +132,15 @@ def main():
         json.dump(result, f, indent=4, ensure_ascii=False)
     
     df_lld_data = pd.read_excel(TARGET_PATH)
-    df_lld_data["ClassID"] = result["lld_grouping"]["ClassIDs"]
-    df_lld_data["ClassificationReason"] = result["lld_grouping"]["ClassificationReasons"]
+    df_lld_data["ClassID"] = result["lld_grouping"]["ClassID"]
+    df_lld_data["ClassificationReason"] = result["lld_grouping"]["ClassificationReason"]
     df_gpm_data = pd.DataFrame(result["gpm_reconstruction"])
-    df_gpm_data["PartOf"] = result["lld_grouping"]["PartOfs"]
-    df_gpm_data["PartOfReason"] = result["lld_grouping"]["PartOfReasons"]
+    # Use map or merge(on="ClassID", how="left")
+    merge_data_partof = pd.DataFrame({"ClassID": [i for i in range(1, len(result["lld_grouping"]["PartOf"])+1)], "PartOf": result["lld_grouping"]["PartOf"]})
+    merge_data_partof_reason = pd.DataFrame({"ClassID": [i for i in range(1, len(result["lld_grouping"]["PartOfReason"])+1)], "PartOfReason": result["lld_grouping"]["PartOfReason"]})
+    df_gpm_data = df_gpm_data.merge(merge_data_partof, on="ClassID", how="left")
+    df_gpm_data = df_gpm_data.merge(merge_data_partof_reason, on="ClassID", how="left")
+
     lld_output_path = f"./outputs/ma-welding-lldgrouping-{get_current_datetime_components()}.xlsx"
     gpm_output_path = f"./outputs/ma-welding-gpmreconstruction-{get_current_datetime_components()}.xlsx"
     df_lld_data.to_excel(lld_output_path, index=False)
